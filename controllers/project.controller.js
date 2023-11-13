@@ -1,4 +1,12 @@
+const { PutObjectCommand } = require("@aws-sdk/client-s3");
+const { v4: uuidv4 } = require("uuid");
 const projectModal = require("../models/project.model");
+const dotenv = require("dotenv");
+const s3 = require("../config/aws");
+dotenv.config();
+
+const BUCKET_NAME = process.env.BUCKET_NAME;
+const BUCKET_REGION = process.env.BUCKET_REGION;
 
 const addProject = async (req, res) => {
   try {
@@ -34,4 +42,31 @@ const getProjects = async (req, res) => {
   }
 };
 
-module.exports = { addProject, getProjects };
+const botImage = async (req, res) => {
+  try {
+    const projectId = req.params.projectId;
+
+    const name = uuidv4();
+    const params = {
+      Bucket: BUCKET_NAME,
+      Key: name,
+      Body: req.file.buffer,
+      ContentType: req.file.mimetype,
+    };
+    const command = new PutObjectCommand(params);
+    await s3.send(command);
+
+    const imageUrl = `https://${BUCKET_NAME}.s3.${BUCKET_REGION}.amazonaws.com/${name}`;
+    const botImage = await projectModal.findByIdAndUpdate(
+      projectId,
+      { botImage: imageUrl },
+      { new: true }
+    );
+
+    res.status(200).send(botImage);
+  } catch (error) {
+    res.status(400).send({ error: error.message });
+  }
+};
+
+module.exports = { addProject, getProjects, botImage };
