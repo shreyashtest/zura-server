@@ -69,4 +69,17 @@ const botImage = async (req, res) => {
   }
 };
 
-module.exports = { addProject, getProjects, botImage };
+const singleProject = async (req, res) => {
+  try {
+    const { projectId } = req.params;
+
+    if (!projectId) return res.status(400).send("projectId is not present");
+
+    const project = await projectModal.findById(projectId);
+    res.status(200).send(project);
+  } catch (error) {
+    res.status(400).send({ error: error.message });
+  }
+};
+
+module.exports = { addProject, getProjects, botImage, singleProject };
